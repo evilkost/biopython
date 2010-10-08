@@ -23,6 +23,7 @@ Wrappers for the new NCBI BLAST+ tools (written in C++):
 - NcbipsiblastCommandline - Position-Specific Initiated BLAST
 - NcbirpsblastCommandline - Reverse Position Specific BLAST
 - NcbirpstblastnCommandline - Translated Reverse Position Specific BLAST
+- NcbiblastformatterCommandline: - Change the format of BLAST output
 
 For further details, see:
 
@@ -1096,6 +1097,90 @@ class NcbirpstblastnCommandline(_NcbiblastCommandline):
             ]
         _NcbiblastCommandline.__init__(self, cmd, **kwargs)
 
+class NcbiblastformatterCommandline(AbstractCommandline):
+    """Wrapper for the NCBI BLAST+ program blast_formatter."""
+    def __init__(self, cmd="blast_formatter", **kwargs):
+        self.parameters = [ \
+            # Input options
+            _Option(["-rid", "RequestID"], ["input"], None, False,
+                    "BLAST Request ID (RID), not compatiable with archive arg", False),
+            _Option(["-archive", "archive"], ["input", "file"], None, False,
+                    "Archive file of results, not compatiable with rid arg.", False),
+            # Formatting options
+            # Needs to be a string
+            _Option(["-outfmt", "outfmt"], ["input"], None, False,
+                    """alignment view options:
+     0 = pairwise,
+     1 = query-anchored showing identities,
+     2 = query-anchored no identities,
+     3 = flat query-anchored, show identities,
+     4 = flat query-anchored, no identities,
+     5 = XML Blast output,
+     6 = tabular,
+     7 = tabular with comment lines,
+     8 = Text ASN.1,
+     9 = Binary ASN.1,
+    10 = Comma-separated values,
+    11 = BLAST archive format (ASN.1) 
+   
+   Options 6, 7, and 10 can be additionally configured to produce
+   a custom format specified by space delimited format specifiers.
+   The supported format specifiers are:
+   	    qseqid means Query Seq-id
+   	       qgi means Query GI
+   	      qacc means Query accesion
+   	   qaccver means Query accesion.version
+   	    sseqid means Subject Seq-id
+   	 sallseqid means All subject Seq-id(s), separated by a ';'
+   	       sgi means Subject GI
+   	    sallgi means All subject GIs
+   	      sacc means Subject accession
+   	   saccver means Subject accession.version
+   	   sallacc means All subject accessions
+   	    qstart means Start of alignment in query
+   	      qend means End of alignment in query
+   	    sstart means Start of alignment in subject
+   	      send means End of alignment in subject
+   	      qseq means Aligned part of query sequence
+   	      sseq means Aligned part of subject sequence
+   	    evalue means Expect value
+   	  bitscore means Bit score
+   	     score means Raw score
+   	    length means Alignment length
+   	    pident means Percentage of identical matches
+   	    nident means Number of identical matches
+   	  mismatch means Number of mismatches
+   	  positive means Number of positive-scoring matches
+   	   gapopen means Number of gap openings
+   	      gaps means Total number of gaps
+   	      ppos means Percentage of positive-scoring matches
+   	    frames means Query and subject frames separated by a '/'
+   	    qframe means Query frame
+   	    sframe means Subject frame
+   	      btop means Blast traceback operations (BTOP)
+   When not provided, the default value is:
+   'qseqid sseqid pident length mismatch gapopen qstart qend sstart send
+   evalue bitscore', which is equivalent to the keyword 'std'
+   Default is 0""", False),
+            _Switch(["-show_gis", "show_gis"], ["switch"], 
+                    "Show NCBI GIs in deflines?"),
+            _Option(["-num_descriptions", "num_descriptions"], ["input"], lambda value: value >= 0, False,
+                    """   Number of database sequences to show one-line descriptions for
+   Default is 500""", False),
+            _Option(["-num_alignments", "num_alignments"], ["input"],  lambda value: value >= 0, False,
+                    """Number of database sequences to show alignments for
+   Default is 250""", False),
+            _Switch(["-html", "html"], ["input"], "Produce HTML output?"),
+            # Restrict search or results
+            _Option(["-max_target_seqs", "max_target_seqs"], ["input"], lambda value: value >= 1, False,
+                    """Maximum number of aligned sequences to keep""", True),
+            # Output configuration options
+            _Option(["-out", "out"], ["output", "file"], None, False, 
+                     """Output file name
+   Default is `-'""", None)
+            ]
+        AbstractCommandline.__init__(self, cmd, **kwargs)
+        
 
 def _test():
     """Run the Bio.Blast.Applications module's doctests."""
