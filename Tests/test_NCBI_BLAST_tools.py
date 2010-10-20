@@ -98,10 +98,10 @@ class Pairwise(unittest.TestCase):
                          + " -query GenBank/NC_005816.ffn -evalue 0.000001" \
                          + " -subject GenBank/NC_005816.fna")
         child = subprocess.Popen(str(cline),
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 universal_newlines=True,
-                                 shell=(sys.platform!="win32"))
+                                 stdout = subprocess.PIPE,
+                                 stderr = subprocess.PIPE,
+                                 universal_newlines = True,
+                                 shell=(sys.platform != "win32"))
         stdoutdata, stderrdata = child.communicate()
         return_code = child.returncode
         self.assertEqual(return_code, 0, "Got error code %i back from:\n%s"
@@ -246,6 +246,43 @@ class CheckCompleteArgList(unittest.TestCase):
         """Check all rpstblastn arguments are supported"""
         self.check("rpstblastn", Applications.NcbirpstblastnCommandline)
 
+class Formatter(unittest.TestCase):
+    # blast_formatter is new in BLAST+ 2.2.24; presumably not
+    # everybody has upgraded their BLAST software, so we want to test
+    # the wrapper only if the blast_formatter program is actually
+    # installed.
+    def isInstalled(self):
+        """Test if the blast_formatter program is installed"""
+        for folder in likely_dirs:
+            if sys.platform=="win32":
+                exe_name = os.path.join(folder, "blast_formatter.exe")
+            else:
+                exe_name = os.path.join(folder, "blast_formatter")
+            if not os.path.isfile(exe_name):
+                continue
+            else:
+                exe_names['blast_formatter'] = exe_name
+                return True
+        # The loop didn't find the blast_formatter program.
+        return False
+
+    def test_blast_formatter(self):
+        """Check that blast_formatter works"""
+        if self.isInstalled():
+            cline = Applications.NcbiblastformatterCommandline(exe_names['blast_formatter'],
+                                                               archive="Blast/abt001.asn",
+                                                               outfmt="\"7 qacc sacc evalue qstart qend sstart send\"")
+            self.assertEqual(str(cline), exe_names['blast_formatter'] +
+                             " -archive Blast/abt001.asn"
+                             " -outfmt \"7 qacc sacc evalue qstart qend sstart send\"")
+            child = subprocess.Popen(str(cline),
+                                     stdout = subprocess.PIPE,
+                                     stderr = subprocess.PIPE,
+                                     universal_newlines = True,
+                                     shell=(sys.platform !=" win32"))
+            stdoutdata, stderrdata = child.communicate()
+            return_code = child.returncode
+            self.assertEqual(return_code, 0, "Got error code %i back from:\n%s" % (return_code, cline))
 
 if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity = 2)
