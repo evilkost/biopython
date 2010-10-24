@@ -448,7 +448,7 @@ class _NcbiblastCommandline(AbstractCommandline):
         AbstractCommandline.__init__(self, cmd, **kwargs)
    
 class _NcbiblastQuerierCommandline(_NcbiblastCommandline):
-    """Base Commandline object for (new) NCBI BLAST+ wrappers (PRIVATE).
+    """Commandline object for (new) NCBI BLAST+ wrappers that query a database (PRIVATE).
 
     This is provided for subclassing, it deals with options
     common to all the BLAST tools that query a BLAST database (blastn, rpsblast, rpsblast, etc).
