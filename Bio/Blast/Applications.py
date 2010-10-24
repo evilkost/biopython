@@ -342,45 +342,77 @@ class RpsBlastCommandline(_BlastCommandLine):
         ] 
         _BlastCommandLine.__init__(self, cmd, **kwargs)
 
-   
 class _NcbiblastCommandline(AbstractCommandline):
     """Base Commandline object for (new) NCBI BLAST+ wrappers (PRIVATE).
 
     This is provided for subclassing, it deals with shared options
-    common to all the BLAST tools (blastn, rpsblast, rpsblast, etc).
+    common to all the BLAST tools (blastn, rpsblast, rpsblast, blast_formatter, etc).
     """
     def __init__(self, cmd=None, **kwargs):
-        assert cmd is not None
         extra_parameters = [ \
-            #Core:
+            # Core:
             _Switch(["-h", "h"], ["input"],
                     "Print USAGE and DESCRIPTION;  ignore other arguments."),
             _Switch(["-help", "help"], ["input"],
                     "Print USAGE, DESCRIPTION and ARGUMENTS description;  ignore other arguments."),
             _Switch(["-version", "version"], ["input"],
                     "Print version number;  ignore other arguments."),
-            #Input query options:
-            _Option(["-query", "query"], ["input", "file"], None, 0,
-                    "The sequence to search with.", False), #Should this be required?
-            _Option(["-query_loc", "query_loc"], ["input"], None, 0,
-                    "Location on the query sequence (Format: start-stop)", False),
-            #General search options:
-            _Option(["-db", "db"], ["input"], None, 0,
-                    "The database to BLAST against.", False), #Should this be required?
-            _Option(["-out", "out"], ["output", "file"], None, 0,
-                    "Output file for alignment.", False),
-            _Option(["-evalue", "evalue"], ["input"], None, 0, 
-                    "Expectation value cutoff.", False),
-            _Option(["-word_size","word_size"], ["input"], None, 0,
-                    """Word size for wordfinder algorithm.
-
-                    Integer. Minimum 2.""", False),
-            #BLAST-2-Sequences options:
-            # - see subclass
-            #Formatting options:
-            _Option(["-outfmt", "outfmt"], ["input"], None, 0, 
-                    "Alignment view.  Integer 0-10.  Use 5 for XML output (differs from classic BLAST which used 7 for XML).",
-                    False), #Did not include old aliases as meaning has changed!
+            # Formatting options
+            # Must be a string
+            _Option(["-outfmt", "outfmt"], ["input"], None, False,
+                    """alignment view options:
+     0 = pairwise,
+     1 = query-anchored showing identities,
+     2 = query-anchored no identities,
+     3 = flat query-anchored, show identities,
+     4 = flat query-anchored, no identities,
+     5 = XML Blast output,
+     6 = tabular,
+     7 = tabular with comment lines,
+     8 = Text ASN.1,
+     9 = Binary ASN.1,
+    10 = Comma-separated values,
+    11 = BLAST archive format (ASN.1) 
+   
+   Options 6, 7, and 10 can be additionally configured to produce
+   a custom format specified by space delimited format specifiers.
+   The supported format specifiers are:
+   	    qseqid means Query Seq-id
+   	       qgi means Query GI
+   	      qacc means Query accesion
+   	   qaccver means Query accesion.version
+   	    sseqid means Subject Seq-id
+   	 sallseqid means All subject Seq-id(s), separated by a ';'
+   	       sgi means Subject GI
+   	    sallgi means All subject GIs
+   	      sacc means Subject accession
+   	   saccver means Subject accession.version
+   	   sallacc means All subject accessions
+   	    qstart means Start of alignment in query
+   	      qend means End of alignment in query
+   	    sstart means Start of alignment in subject
+   	      send means End of alignment in subject
+   	      qseq means Aligned part of query sequence
+   	      sseq means Aligned part of subject sequence
+   	    evalue means Expect value
+   	  bitscore means Bit score
+   	     score means Raw score
+   	    length means Alignment length
+   	    pident means Percentage of identical matches
+   	    nident means Number of identical matches
+   	  mismatch means Number of mismatches
+   	  positive means Number of positive-scoring matches
+   	   gapopen means Number of gap openings
+   	      gaps means Total number of gaps
+   	      ppos means Percentage of positive-scoring matches
+   	    frames means Query and subject frames separated by a '/'
+   	    qframe means Query frame
+   	    sframe means Subject frame
+   	      btop means Blast traceback operations (BTOP)
+   When not provided, the default value is:
+   'qseqid sseqid pident length mismatch gapopen qstart qend sstart send
+   evalue bitscore', which is equivalent to the keyword 'std'
+   Default is 0""", False),
             _Switch(["-show_gis","show_gis"], ["input"],
                     "Show NCBI GIs in deflines?"),
             _Option(["-num_descriptions","num_descriptions"], ["input"], None, 0,
@@ -392,9 +424,53 @@ class _NcbiblastCommandline(AbstractCommandline):
                     """Number of database sequences to show num_alignments for.
 
                     Integer argument (at least zero). Default is 200.
-                    See also num_alignments.""", False),
+                    See also num_descriptions.""", False),
             _Switch(["-html", "html"], ["input"],
                     "Produce HTML output? See also the outfmt option."),
+            # Restrict search or results
+            _Option(["-max_target_seqs", "max_target_seqs"], ["input"], None, 0,
+                    """Maximum number of aligned sequences to keep.
+
+                    Integer argument (at least one).""", False),
+            # Output configuration options
+            _Option(["-out", "out"], ["output", "file"], None, 0,
+                    "Output file for alignment.", False),
+            # Miscellaneous options
+            _Switch(["-parse_deflines", "parse_deflines"], ["input"],
+                    "Should the query and subject defline(s) be parsed?"),]
+        try:
+            #Insert extra parameters - at the start just in case there
+            #are any arguments which must come last:
+            self.parameters = extra_parameters + self.parameters
+        except AttributeError:
+            #Should we raise an error?  The subclass should have set this up!
+            self.parameters = extra_parameters
+        AbstractCommandline.__init__(self, cmd, **kwargs)
+   
+class _NcbiblastQuerierCommandline(_NcbiblastCommandline):
+    """Base Commandline object for (new) NCBI BLAST+ wrappers (PRIVATE).
+
+    This is provided for subclassing, it deals with options
+    common to all the BLAST tools that query a BLAST database (blastn, rpsblast, rpsblast, etc).
+    """
+    def __init__(self, cmd=None, **kwargs):
+        assert cmd is not None
+        extra_parameters = [ \
+            #Input query options:
+            _Option(["-query", "query"], ["input", "file"], None, 0,
+                    "The sequence to search with.", False), #Should this be required?
+            _Option(["-query_loc", "query_loc"], ["input"], None, 0,
+                    "Location on the query sequence (Format: start-stop)", False),
+            #General search options:
+            _Option(["-db", "db"], ["input"], None, 0,
+                    "The database to BLAST against.", False), #Should this be required?
+            _Option(["-evalue", "evalue"], ["input"], None, 0, 
+                    "Expectation value cutoff.", False),
+            _Option(["-word_size","word_size"], ["input"], None, 0,
+                    """Word size for wordfinder algorithm.
+                    Integer. Minimum 2.""", False),
+            #BLAST-2-Sequences options:
+            # - see subclass
             #Query filtering options
             # TODO -soft_masking <Boolean>, is this a switch or an option?
             #_Switch(["-soft_masking", "soft_masking"], ["input"],
@@ -419,10 +495,6 @@ class _NcbiblastCommandline(AbstractCommandline):
                     False),
             _Option(["-entrez_query", "entrez_query"], ["input"], None, 0,
                     "Restrict search with the given Entrez query (requires remote).", False),
-            _Option(["-max_target_seqs", "max_target_seqs"], ["input"], None, 0,
-                    """Maximum number of aligned sequences to keep.
-
-                    Integer argument (at least one).""", False),
             #Statistical options
             _Option(["-dbsize", "dbsize"], ["input"], None, 0,
                     "Effective length of the database (integer)", False),
@@ -453,8 +525,6 @@ class _NcbiblastCommandline(AbstractCommandline):
 
                     Incompatible with: import_search_strategy""", False),
             #Miscellaneous options
-            _Switch(["-parse_deflines", "parse_deflines"], ["input"],
-                    "Should the query and subject defline(s) be parsed?"),
             _Option(["-num_threads", "num_threads"], ["input"], None, 0,
                     """Number of threads to use in the BLAST search.
 
@@ -472,7 +542,7 @@ class _NcbiblastCommandline(AbstractCommandline):
         except AttributeError:
             #Should we raise an error?  The subclass should have set this up!
             self.parameters = extra_parameters
-        AbstractCommandline.__init__(self, cmd, **kwargs)
+        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
 
     def _validate(self):
         incompatibles = {"remote":["gilist", "negative_gilist", "num_threads"],
@@ -492,7 +562,7 @@ class _NcbiblastCommandline(AbstractCommandline):
                         raise ValueError("Options %s and %s are incompatible." \
                                          % (a,b))
 
-class _Ncbiblast2SeqCommandline(_NcbiblastCommandline):
+class _Ncbiblast2SeqCommandline(_NcbiblastQuerierCommandline):
     """Base Commandline object for (new) NCBI BLAST+ wrappers (PRIVATE).
 
     This is provided for subclassing, it deals with shared options
@@ -545,7 +615,7 @@ class _Ncbiblast2SeqCommandline(_NcbiblastCommandline):
         except AttributeError:
             #Should we raise an error?  The subclass should have set this up!
             self.parameters = extra_parameters
-        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+        _NcbiblastQuerierCommandline.__init__(self, cmd, **kwargs)
 
 
     def _validate(self):
@@ -553,7 +623,7 @@ class _Ncbiblast2SeqCommandline(_NcbiblastCommandline):
                          "culling_limit":["best_hit_overhang","best_hit_score_edge"],
                          "subject":["db", "gilist", "negative_gilist", "seqidlist"]}
         self._validate_incompatibilities(incompatibles)
-        _NcbiblastCommandline._validate(self)
+        _NcbiblastQuerierCommandline._validate(self)
 
 class NcbiblastpCommandline(_Ncbiblast2SeqCommandline):
     """Create a commandline for the NCBI BLAST+ program blastp (for proteins).
@@ -1026,7 +1096,7 @@ class NcbipsiblastCommandline(_Ncbiblast2SeqCommandline):
         _Ncbiblast2SeqCommandline._validate(self)
 
 
-class NcbirpsblastCommandline(_NcbiblastCommandline):
+class NcbirpsblastCommandline(_NcbiblastQuerierCommandline):
     """Wrapper for the NCBI BLAST+ program rpsblast.
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
@@ -1052,10 +1122,10 @@ class NcbirpsblastCommandline(_NcbiblastCommandline):
                     Format: "yes", "window locut hicut", or "no" to disable.
                     Default is "12 2.2 2.5""", False),
             ]
-        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+        _NcbiblastQuerierCommandline.__init__(self, cmd, **kwargs)
 
 
-class NcbirpstblastnCommandline(_NcbiblastCommandline):
+class NcbirpstblastnCommandline(_NcbiblastQuerierCommandline):
     """Wrapper for the NCBI BLAST+ program rpstblastn.
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
@@ -1095,92 +1165,19 @@ class NcbirpstblastnCommandline(_NcbiblastCommandline):
             _Switch(["-ungapped", "ungapped"], ["input"],
                     "Perform ungapped alignment only?"),
             ]
-        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+        _NcbiblastQuerierCommandline.__init__(self, cmd, **kwargs)
 
-class NcbiblastformatterCommandline(AbstractCommandline):
+class NcbiblastformatterCommandline(_NcbiblastCommandline):
     """Wrapper for the NCBI BLAST+ program blast_formatter."""
     def __init__(self, cmd="blast_formatter", **kwargs):
         self.parameters = [ \
             # Input options
-            _Option(["-rid", "RequestID"], ["input"], None, False,
-                    "BLAST Request ID (RID), not compatiable with archive arg", False),
             _Option(["-archive", "archive"], ["input", "file"], None, False,
-                    "Archive file of results, not compatiable with rid arg.", False),
-            # Formatting options
-            # Needs to be a string
-            _Option(["-outfmt", "outfmt"], ["input"], None, False,
-                    """alignment view options:
-     0 = pairwise,
-     1 = query-anchored showing identities,
-     2 = query-anchored no identities,
-     3 = flat query-anchored, show identities,
-     4 = flat query-anchored, no identities,
-     5 = XML Blast output,
-     6 = tabular,
-     7 = tabular with comment lines,
-     8 = Text ASN.1,
-     9 = Binary ASN.1,
-    10 = Comma-separated values,
-    11 = BLAST archive format (ASN.1) 
-   
-   Options 6, 7, and 10 can be additionally configured to produce
-   a custom format specified by space delimited format specifiers.
-   The supported format specifiers are:
-   	    qseqid means Query Seq-id
-   	       qgi means Query GI
-   	      qacc means Query accesion
-   	   qaccver means Query accesion.version
-   	    sseqid means Subject Seq-id
-   	 sallseqid means All subject Seq-id(s), separated by a ';'
-   	       sgi means Subject GI
-   	    sallgi means All subject GIs
-   	      sacc means Subject accession
-   	   saccver means Subject accession.version
-   	   sallacc means All subject accessions
-   	    qstart means Start of alignment in query
-   	      qend means End of alignment in query
-   	    sstart means Start of alignment in subject
-   	      send means End of alignment in subject
-   	      qseq means Aligned part of query sequence
-   	      sseq means Aligned part of subject sequence
-   	    evalue means Expect value
-   	  bitscore means Bit score
-   	     score means Raw score
-   	    length means Alignment length
-   	    pident means Percentage of identical matches
-   	    nident means Number of identical matches
-   	  mismatch means Number of mismatches
-   	  positive means Number of positive-scoring matches
-   	   gapopen means Number of gap openings
-   	      gaps means Total number of gaps
-   	      ppos means Percentage of positive-scoring matches
-   	    frames means Query and subject frames separated by a '/'
-   	    qframe means Query frame
-   	    sframe means Subject frame
-   	      btop means Blast traceback operations (BTOP)
-   When not provided, the default value is:
-   'qseqid sseqid pident length mismatch gapopen qstart qend sstart send
-   evalue bitscore', which is equivalent to the keyword 'std'
-   Default is 0""", False),
-            _Switch(["-show_gis", "show_gis"], ["switch"], 
-                    "Show NCBI GIs in deflines?"),
-            _Option(["-num_descriptions", "num_descriptions"], ["input"], lambda value: value >= 0, False,
-                    """   Number of database sequences to show one-line descriptions for
-   Default is 500""", False),
-            _Option(["-num_alignments", "num_alignments"], ["input"],  lambda value: value >= 0, False,
-                    """Number of database sequences to show alignments for
-   Default is 250""", False),
-            _Switch(["-html", "html"], ["input"], "Produce HTML output?"),
-            # Restrict search or results
-            _Option(["-max_target_seqs", "max_target_seqs"], ["input"], lambda value: value >= 1, False,
-                    """Maximum number of aligned sequences to keep""", True),
-            # Output configuration options
-            _Option(["-out", "out"], ["output", "file"], None, False, 
-                     """Output file name
-   Default is `-'""", None)
-            ]
-        AbstractCommandline.__init__(self, cmd, **kwargs)
-        
+                    "Archive file of results, not compatible with rid arg.", False),
+            _Option(["-rid", "RequestID"], ["input"], None, False,
+                    "BLAST Request ID (RID), not compatible with archive arg", False),
+        ]
+        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
 
 def _test():
     """Run the Bio.Blast.Applications module's doctests."""
