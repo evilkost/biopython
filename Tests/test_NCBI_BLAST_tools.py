@@ -272,9 +272,15 @@ class Formatter(unittest.TestCase):
             cline = Applications.NcbiblastformatterCommandline(exe_names['blast_formatter'],
                                                                archive="Blast/abt001.asn",
                                                                outfmt="\"7 qacc sacc evalue qstart qend sstart send\"")
+            # There is sort of a bug in this test: The order of command line arguments the wrapper generates depends
+            # on the order the _Options and _Switches are initialized, which is an implementation detail dictacted
+            # by the inheritance hierarchy, as well as the order the _Switches and _Options are listed in a given class.
+            # In an ideal world, "foocmd -switch1 -switch2" is equivalent to "foocmd -switch2 -switch1",
+            # but for this is not the world live in, so for now, the arguments in the string concatenation in the
+            # 2nd argument must be in a particular order.
             self.assertEqual(str(cline), exe_names['blast_formatter'] +
-                             " -archive Blast/abt001.asn"
-                             " -outfmt \"7 qacc sacc evalue qstart qend sstart send\"")
+                             " -outfmt \"7 qacc sacc evalue qstart qend sstart send\""
+                             " -archive Blast/abt001.asn")
             child = subprocess.Popen(str(cline),
                                      stdout = subprocess.PIPE,
                                      stderr = subprocess.PIPE,
