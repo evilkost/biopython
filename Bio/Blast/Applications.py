@@ -1178,7 +1178,7 @@ class NcbiblastformatterCommandline(_NcbiblastCommandline):
             # Input options
             _Option(["-archive", "archive"], ["input", "file"], None, False,
                     "Archive file of results, not compatible with rid arg.", False),
-            _Option(["-rid", "RequestID"], ["input"], None, False,
+            _Option(["-rid", "rid"], ["input"], None, False,
                     "BLAST Request ID (RID), not compatible with archive arg", False),
         ]
         _NcbiblastCommandline.__init__(self, cmd, **kwargs)
