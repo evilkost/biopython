@@ -1102,7 +1102,7 @@ class NcbiblastformatterCommandline(AbstractCommandline):
     def __init__(self, cmd="blast_formatter", **kwargs):
         self.parameters = [ \
             # Input options
-            _Option(["-rid", "RequestID"], ["input"], None, False,
+            _Option(["-rid", "rid"], ["input"], None, False,
                     "BLAST Request ID (RID), not compatiable with archive arg", False),
             _Option(["-archive", "archive"], ["input", "file"], None, False,
                     "Archive file of results, not compatiable with rid arg.", False),
@@ -1180,6 +1180,20 @@ class NcbiblastformatterCommandline(AbstractCommandline):
    Default is `-'""", None)
             ]
         AbstractCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {"rid":["archive"],
+                         "archive":["rid"]}
+        self._validate_incompatibilities(incompatibles)
+        AbstractCommandline._validate(self)
+
+    def _validate_incompatibilities(self, incompatibles):
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                         % (a,b))
         
 
 def _test():
