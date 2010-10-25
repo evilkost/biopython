@@ -1153,7 +1153,7 @@ class NcbiblastformatterCommandline(_NcbiblastCommandline):
     def __init__(self, cmd="blast_formatter", **kwargs):
         self.parameters = [ \
             # Input options
-            _Option(["-rid", "RequestID"], ["input"], None, False,
+            _Option(["-rid", "rid"], ["input"], None, False,
                     "BLAST Request ID (RID), not compatiable with archive arg", False),
             _Option(["-archive", "archive"], ["input", "file"], None, False,
                     "Archive file of results, not compatiable with rid arg.", False),
