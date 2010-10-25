@@ -1159,6 +1159,12 @@ class NcbiblastformatterCommandline(_NcbiblastCommandline):
                     "Archive file of results, not compatiable with rid arg.", False),
             ]
         _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {"rid":["archive"],
+                         "archive":["rid"]}
+        self._validate_incompatibilities(incompatibles)
+        _NcbiblastCommandline._validate(self);
         
 
 def _test():
