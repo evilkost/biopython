@@ -446,6 +446,17 @@ class _NcbiblastCommandline(AbstractCommandline):
             #Should we raise an error?  The subclass should have set this up!
             self.parameters = extra_parameters
         AbstractCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        AbstractCommandline._validate(self)
+
+    def _validate_incompatibilities(self, incompatibles):
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                             % (a,b))
    
 class _NcbiblastQuerierCommandline(_NcbiblastCommandline):
     """Commandline object for (new) NCBI BLAST+ wrappers that query a database (PRIVATE).
@@ -552,15 +563,9 @@ class _NcbiblastQuerierCommandline(_NcbiblastCommandline):
         self._validate_incompatibilities(incompatibles)
         if self.entrez_query and not self.remote :
             raise ValueError("Option entrez_query requires remote option.")
-        AbstractCommandline._validate(self)
+        _NcbiblastCommandline._validate(self)
 
-    def _validate_incompatibilities(self, incompatibles):
-        for a in incompatibles:
-            if self._get_parameter(a):
-                for b in incompatibles[a]:
-                    if self._get_parameter(b):
-                        raise ValueError("Options %s and %s are incompatible." \
-                                         % (a,b))
+
 
 class _Ncbiblast2SeqCommandline(_NcbiblastQuerierCommandline):
     """Base Commandline object for (new) NCBI BLAST+ wrappers (PRIVATE).
@@ -616,7 +621,6 @@ class _Ncbiblast2SeqCommandline(_NcbiblastQuerierCommandline):
             #Should we raise an error?  The subclass should have set this up!
             self.parameters = extra_parameters
         _NcbiblastQuerierCommandline.__init__(self, cmd, **kwargs)
-
 
     def _validate(self):
         incompatibles = {"subject_loc":["db", "gilist", "negative_gilist", "seqidlist", "remote"],
@@ -1178,6 +1182,12 @@ class NcbiblastformatterCommandline(_NcbiblastCommandline):
                     "BLAST Request ID (RID), not compatible with archive arg", False),
         ]
         _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {"rid":["archive"],
+                         "archive":["rid"]}
+        self._validate_incompatibilities(incompatibles)
+        _NcbiblastCommandline._validate(self)
 
 def _test():
     """Run the Bio.Blast.Applications module's doctests."""
