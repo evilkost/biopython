@@ -4,6 +4,7 @@
 import copy
 import math
 import random
+import sys
 
 # biopython
 from Bio.Seq import MutableSeq
@@ -474,7 +475,12 @@ class HiddenMarkovModel:
         log_prob = copy.copy(probability)
 
         for key in log_prob:
-            log_prob[key] = math.log(log_prob[key])
+            if log_prob[key] == 0.0:
+                # Set to the most negative number the computer can handle.
+                # When support for python 2.5 is dropped, this can be changed to float("-inf")
+                log_prob[key] = -sys.float_info.max
+            else:
+                log_prob[key] = math.log(log_prob[key])
 
         return log_prob
     
