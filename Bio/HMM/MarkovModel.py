@@ -42,26 +42,53 @@ class MarkovModelBuilder:
         # the probabilities for transitions and emissions
         # by default we have no transitions and all possible emissions
         self.transition_prob = {}
-        self.emission_prob = self._all_blank(state_alphabet,
-                                             emission_alphabet)
+        self.emission_prob = self._set_all_emissions_blank(state_alphabet,
+                                                           emission_alphabet)
 
         # the default pseudocounts for transition and emission counting
         self.transition_pseudo = {}
         self.emission_pseudo = self._all_pseudo(state_alphabet,
                                                 emission_alphabet)
 
-    def _all_blank(self, first_alphabet, second_alphabet):
-        """Return a dictionary with all counts set to zero.
+    def _set_all_transitions_blank(self, state_alphabet):
+        """Return a dictionary with all transition counts set to zero.
 
-        This uses the letters in the first and second alphabet to create
-        a dictionary with keys of two tuples organized as
-        (letter of first alphabet, letter of second alphabet). The values
-        are all set to 0.
+        This uses the letters in a statealphabet to create a
+        dictionary with keys of two-tuples organized as (letter of a
+        state_alphabet, letter of state_alphabet). Both letters can be
+        the same or different, but the second element canont be
+        begin_state_name. The values are all set to 0.
         """
         all_blank = {}
-        for first_state in first_alphabet.letters:
-            for second_state in second_alphabet.letters:
-                all_blank[(first_state, second_state)] = 0
+        for from_state in state_alphabet.letters:
+            for to_state in state_alphabet.letters:
+                if to_state == self.begin_state_name:
+                    # Transitioning to the begin state is not allowed
+                    continue
+                else:
+                    all_blank[(from_state, to_state)] = 0
+
+        return all_blank
+
+    def _set_all_emissions_blank(self, state_alphabet, emission_alphabet):
+        """Return a dictionary with all transition counts set to zero.
+
+        This uses the letters in the state and emission alphabets to
+        create a dictionary with keys of two-tuples organized as
+        (letter of state alphabet, letter of emission alphabet). The
+        letter from the state alphabet cannot be begin_state_name
+        because the begin state cannot emit a symbol. The values are
+        all set to 0.
+        """
+        all_blank = {}
+        for state in state_alphabet.letters:
+            if state == self.begin_state_name:
+                # The begin state cannot emit a symbol, it can only
+                # transition to another state.
+                continue
+            else:
+                for symbol in emission_alphabet.letters:
+                    all_blank[(first_state, second_state)] = 0
 
         return all_blank
 
@@ -150,8 +177,7 @@ class MarkovModelBuilder:
         """
         # first get all probabilities and pseudo counts set
         # to the default values
-        all_probs = self._all_blank(self._state_alphabet,
-                                    self._state_alphabet)
+        all_probs = self._set_all_transitions_blank(self._state_alphabet)
 
         all_pseudo = self._all_pseudo(self._state_alphabet,
                                       self._state_alphabet)
