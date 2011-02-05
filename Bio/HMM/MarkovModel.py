@@ -211,6 +211,10 @@ class MarkovModelBuilder:
             assert state in self._state_alphabet, \
                    "State %s was not found in the sequence alphabet" % state
 
+        # check that the user is not trying to create a transition to
+        # the begin state
+        assert to_state != self.begin_state_name, "Transitions to the begin state are not allowed."
+
         # ensure that the states are not already set
         if ((from_state, to_state) not in self.transition_prob and 
             (from_state, to_state) not in self.transition_pseudo):
