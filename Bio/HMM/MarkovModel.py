@@ -35,7 +35,10 @@ class MarkovModelBuilder:
         """
         self._state_alphabet = state_alphabet
         self._emission_alphabet = emission_alphabet
-        
+
+        # The name of the begin state
+        self.begin_state_name = ""
+
         # the probabilities for transitions and emissions
         # by default we have no transitions and all possible emissions
         self.transition_prob = {}
