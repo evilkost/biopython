@@ -11,7 +11,10 @@ http://www.ncbi.nlm.nih.gov/geo/
 
 import Record
 
-
+# With the exception of the 'table_begin' and 'table_end' attributes, and
+# Annotation entity indicators, all entity indicator, entity attribute, and data
+# table row lines should have a label and a value. The label and value are
+# separated by an '=' character.
 def _read_key_value(line):
     words = line[1:].split("=", 1)
     try:
