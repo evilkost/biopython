@@ -1,6 +1,7 @@
 # Copyright 2001 by Katharine Lindner.  All rights reserved.
 # Copyright 2006 by PeterC.  All rights reserved.
 # Copyright 2007 by Michiel de Hoon.  All rights reserved.
+# Copyright 2011 by Phillip Garland <pgarland@gmail.com>.  All rights reserved.
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
