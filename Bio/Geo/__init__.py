@@ -60,3 +60,22 @@ def parse(handle):
             row = line.split("\t")
             record.table_rows.append(row)
     yield record
+
+
+def stringIsType(strObj, coercion):
+    """Test if strObj can be converted by coercion, e.g. int or float"""
+    try:
+        coercion(strObj)
+    except ValueError:
+        return False 
+
+    return True
+
+def maybeConvertToNumber(strObj):
+    """Convert str to a numeric type, if possible."""
+    if stringIsType(strObj, int):
+        return int(strObj)
+    elif stringIsType(strObj, float):
+        return float(strObj)
+    else:
+        return strObj
