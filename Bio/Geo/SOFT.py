@@ -12,6 +12,8 @@
 import string
 import re
 
+from utils import _read_key_value, stringIsType, maybeConvertToNumber
+
 # The SOFT class should never be directly instantiated; it just contains
 # variables and methods common to some or all of it's subclasses (GSM, GSE, GPL,
 # and GDS)

@@ -12,22 +12,7 @@ http://www.ncbi.nlm.nih.gov/geo/
 
 import Record
 from SOFT import GDS, GPL, GSE, GSM
-
-# With the exception of the 'table_begin' and 'table_end' attributes, and
-# Annotation entity indicators, all entity indicator, entity attribute, and data
-# table row lines should have a label and a value. The label and value are
-# separated by an '=' character.
-def _read_key_value(line):
-    words = line[1:].split("=", 1)
-    try:
-        key, value = words
-        value = value.strip()
-    except ValueError:
-        key = words[0]
-        value = ""
-    key = key.strip()
-    return key, value
-
+from utils import _read_key_value
 
 def parse(handle):
     record = None
@@ -63,21 +48,3 @@ def parse(handle):
             record.table_rows.append(row)
     yield record
 
-
-def stringIsType(strObj, coercion):
-    """Test if strObj can be converted by coercion, e.g. int or float"""
-    try:
-        coercion(strObj)
-    except ValueError:
-        return False 
-
-    return True
-
-def maybeConvertToNumber(strObj):
-    """Convert str to a numeric type, if possible."""
-    if stringIsType(strObj, int):
-        return int(strObj)
-    elif stringIsType(strObj, float):
-        return float(strObj)
-    else:
-        return strObj
