@@ -11,6 +11,7 @@ http://www.ncbi.nlm.nih.gov/geo/
 """
 
 import Record
+from SOFT import GDS, GPL, GSE, GSM
 
 # With the exception of the 'table_begin' and 'table_end' attributes, and
 # Annotation entity indicators, all entity indicator, entity attribute, and data
