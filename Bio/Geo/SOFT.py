@@ -170,11 +170,11 @@ class SOFT(object):
         """Creates a function that generates a hyperlink from a data table value"""
         return lambda(tableValue): pre + tableValue + suf
 
-    # Parse the entity- the metadata about the platform, series, or sample. The
+    # Read in the entity- the metadata about the platform, series, or sample. The
     # GDS class overrides this method because Datasets contain multiple
     # entities, where as platforms (GPL), series (GSE), and samples (GSM)
     # contain a single entity
-    def parseEntities(self, handle):
+    def readEntities(self, handle):
         # In GSM, GSE, and GPL files, there should be a entity indicator only on
         # the first line, so we process that line, then break.
         for line in handle:
@@ -219,7 +219,7 @@ class SOFT(object):
     # Handle the data table descriptions; this is used by the GPL, GSM, and GDS
     # subclasses. GSE (Series) do not contain a data table, so the GSE class
     # doesn't need it.
-    def parseTableHeaderDescriptions(self, handle):
+    def readTableHeaderDescriptions(self, handle):
         # Table header descriptions are after entity attributes (in GSM,
         # GSE, and GPL files)
         columnNum = 0
@@ -250,7 +250,7 @@ class SOFT(object):
     # Handle the data table. This is used by the GPL, GSM, and GDS
     # subclasses. GSE (Series) do not contain a data table, so the GSE class
     # doesn't need it.
-    def parseTable(self, handle):
+    def readTable(self, handle):
         rowNumber = 0
 
         for line in handle:
@@ -302,16 +302,16 @@ class GPL(SOFT):
         self._attributes = dict(self._SOFTattributes, **self._GPLattributes)
         self._setMetaDefaultValues()
 
-    def parse(self, fileName):
+    def read(self, fileName):
         handle = open(fileName)
-        self.parseEntities(handle)
-        self.parseTableHeaderDescriptions(handle)
+        self.readEntities(handle)
+        self.readTableHeaderDescriptions(handle)
         # Between the table header descriptions and the data table itself,
         # there's a line that contains the column names. Since the information
         # in this column is redundant with table header descriptions, we skip
         # past it.
         handle.next()
-        self.parseTable(handle)
+        self.readTable(handle)
         handle.close()
 
 class GSM(SOFT):
@@ -348,17 +348,17 @@ class GSM(SOFT):
         self._attributes = dict(self._SOFTattributes, **self._GSMattributes)
         self._setMetaDefaultValues()
 
-    def parse(self, fileName):
-        self.parseEntities(fileName)
+    def read(self, fileName):
+        self.readEntities(fileName)
         handle = open(fileName)
-        self.parseEntities(handle)
-        self.parseTableHeaderDescriptions(handle)
+        self.readEntities(handle)
+        self.readTableHeaderDescriptions(handle)
         # Between the table header descriptions and the data table itself,
         # there's a line that contains the column names. Since the information
         # in this column is redundant with table header descriptions, we skip
         # past it.
         handle.next()        
-        self.parseTable(handle)
+        self.readTable(handle)
         handle.close()
 
         # Group the attributes by channel by filling meta.['channels']
@@ -395,12 +395,12 @@ class GSE(SOFT):
         self._attributes = dict(self._SOFTattributes, **self._GSEattributes)
         self._setMetaDefaultValues()
 
-    def parse(self, filename):
-        """Parse a GSE file"""
+    def read(self, filename):
+        """Read a GSE file"""
         handle = open(filename)
-        self.parseEntities(handle)
-        self.parseTableHeaderDescriptions(handle)
-        # GSE files do not contain a table, so we just parse the metadata
+        self.readEntities(handle)
+        self.readTableHeaderDescriptions(handle)
+        # GSE files do not contain a table, so we just read the metadata
         handle.close()
 
 class GDS(SOFT):
@@ -459,8 +459,8 @@ class GDS(SOFT):
         # FIXME: Maybe make this a dictionary, indexed by the subset's name
         self.subsets = []
 
-    def parseEntities(self, handle):
-        """Parse all the entities from a GDS file"""
+    def readEntities(self, handle):
+        """Read in all the entities from a GDS file"""
         entity = ''
         dataSetEntityCount = 0
 
@@ -500,18 +500,18 @@ class GDS(SOFT):
                 if entity == 'subset':
                     self.subsets.append(self.entities['subset'])
 
-    def parseMeta(self, fileName):
-        """Parse the entities and data table header descriptions from a GDS file"""
+    def readMeta(self, fileName):
+        """Read in the entities and data table header descriptions from a GDS file"""
         handle = open(fileName)
-        self.parseEntities(handle)
-        self.parseTableHeaderDescriptions(handle)
+        self.readEntities(handle)
+        self.readTableHeaderDescriptions(handle)
         handle.close()
                             
-    def parse(self, fileName):
-        """Parse the metadata and data table from a GDS file"""
+    def read(self, fileName):
+        """Read in the metadata and data table from a GDS file"""
         handle = open(fileName)
-        self.parseEntities(handle)
-        self.parseTableHeaderDescriptions(handle)
+        self.readEntities(handle)
+        self.readTableHeaderDescriptions(handle)
         handle.next()
-        self.parseTable(handle)
+        self.readTable(handle)
         handle.close()
