@@ -6077,20 +6077,56 @@ as illustrated in Section~\ref{sec:entrez-webenv}.
 
 \subsection{Parsing GEO records}
 
-GEO (\href{http://www.ncbi.nlm.nih.gov/geo/}{Gene Expression Omnibus})
-is a data repository of high-throughput gene expression and hybridization
-array data. The \verb|Bio.Geo| module can be used to parse GEO-formatted
-data.
+GEO (\href{http://www.ncbi.nlm.nih.gov/geo/}{Gene Expression Omnibus}) is a data
+repository of high-throughput gene expression and hybridization array data. The
+GEO repository has two file formats for its data: SOFT and XML. The
+\verb|Bio.Geo| module can be used to parse SOFT-formatted data.
 
-The following code fragment shows how to parse the example GEO file
-\verb|GSE16.txt| into a record and print the record:
+NCBI has a \href{http://www.ncbi.nlm.nih.gov/geo/info/soft2.html}{page}
+documenting the SOFT file format.
+
+The GEO repository contains 4 types of records, and the GEO package has a class
+for each of them: platforms (\verb|GPL| class), series (\verb|GSE|), samples
+(\verb|GSM|), and dataset (\verb|GDS|):
 
 \begin{verbatim}
 >>> from Bio import Geo
->>> handle = open("GSE16.txt")
->>> records = Geo.parse(handle)
->>> for record in records:
-...     print record
+>>> gse16 = GSE()
+>>> gpl96 = GPL()
+>>> gsm14498 = GSM()
+>>> gds858 = GDS()
+\end{verbatim}
+
+Each class has a \verb|parse()| method that takes a filename as an argument, and
+parses the file's attributes, data table header descriptions, and if the file
+containes a data table, the data table itself:
+
+\begin{verbatim}
+>>> gds858.parse("GDS858_full.soft")
+\end{verbatim}
+
+If you only need the metadata- the attributes and data table header
+descriptions, each object has a \verb|parseMeta()| method that does not parse
+the data table.
+
+\begin{verbatim}
+>>> gsm14498.parseMeta("GSM14498.txt")
+\end{verbatim}
+
+After parsing, the object has a dictionary named \verb|meta| that contains the
+file's attributes:
+
+\begin{verbatim}
+>>> gds858.meta['channel_count']
+1
+\end{verbatim}
+
+Data table values are accessed using the \verb|getTableValue()| method, which takes an
+ID and a column name as arguments:
+
+\begin{verbatim}
+>>> gds858.getTableValue("1007_s_at", "GSM14498")
+3736.9000000000001
 \end{verbatim}
 
 You can search the ``gds'' database (GEO datasets) with ESearch:
