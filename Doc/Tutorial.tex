@@ -6097,20 +6097,20 @@ for each of them: platforms (\verb|GPL| class), series (\verb|GSE|), samples
 >>> gds858 = GDS()
 \end{verbatim}
 
-Each class has a \verb|parse()| method that takes a filename as an argument, and
-parses the file's attributes, data table header descriptions, and if the file
+Each class has a \verb|read()| method that takes a filename as an argument, and
+reads in the file's attributes, data table header descriptions, and if the file
 containes a data table, the data table itself:
 
 \begin{verbatim}
->>> gds858.parse("GDS858_full.soft")
+>>> gds858.read("GDS858_full.soft")
 \end{verbatim}
 
 If you only need the metadata- the attributes and data table header
-descriptions, each object has a \verb|parseMeta()| method that does not parse
-the data table.
+descriptions, each object has a \verb|readMeta()| method that does not read the
+data table.
 
 \begin{verbatim}
->>> gsm14498.parseMeta("GSM14498.txt")
+>>> gsm14498.readMeta("GSM14498.txt")
 \end{verbatim}
 
 After parsing, the object has a dictionary named \verb|meta| that contains the
