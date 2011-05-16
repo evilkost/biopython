@@ -59,7 +59,7 @@ class SOFT(object):
         # The mapping from ID to table row number
         self.idDict = {}
         # The data table. This will be a 2-D array indexed by column and row.
-        self.table = []
+        self._table = []
 
     # Prints the main metadata associated with a file
     def __str__(self):
@@ -266,7 +266,7 @@ class SOFT(object):
                     if self._delimiters[columnNum]: # Split the fields with the column
                         row[columnNum] = re.split(self._delimiters[columnNum], row[columnNum])
 
-                self.table.append(row)
+                self._table.append(row)
                 # Add to the mapping between ID and row number
                 self.idDict[row[0]] = rowNumber
                 rowNumber += 1
@@ -274,7 +274,7 @@ class SOFT(object):
     def getTableValue(self, id, column):
         idNum = self.idDict[id]
         columnNum = self.columnDict[column]
-        value = self.table[idNum][columnNum]
+        value = self._table[idNum][columnNum]
 
         if isinstance(value, list):
             return [maybeConvertToNumber(elt) for elt in value]
