@@ -18,7 +18,8 @@ from utils import _read_key_value, stringIsType, maybeConvertToNumber
 # variables and methods common to some or all of it's subclasses (GSM, GSE, GPL,
 # and GDS)
 class SOFT(object):
-    def __init__(self):
+    def __init__(self, rowFilterPred = None):
+        self.rowFilterPred = rowFilterPred
         # These attributes are used to generate a dictionary to hold the values
         # of the attributes found a file. 'count' gives the possible number of
         # occurances of an attribute in a file. A literal number, e.g. '0' or
@@ -266,6 +267,13 @@ class SOFT(object):
                     if self._delimiters[columnNum]: # Split the fields with the column
                         row[columnNum] = re.split(self._delimiters[columnNum], row[columnNum])
 
+                if self.rowFilterPred :
+                    rowDict = dict(zip([column['name'] for column in self.columns], row))
+                    if not self.rowFilterPred(rowDict):
+                        # Don't add the row to the table; skip to the next line
+                        continue
+                
+                # Add the row to the table    
                 self._table.append(row)
                 # Add to the mapping between ID and row number
                 self.idDict[row[0]] = rowNumber
@@ -282,8 +290,8 @@ class SOFT(object):
             return maybeConvertToNumber(value)
 
 class GPL(SOFT):
-    def __init__(self):
-        super(GPL, self).__init__()
+    def __init__(self, rowFilterPred = None):
+        super(GPL, self).__init__(rowFilterPred)
         self._GPLattributes= {'title': {'count': '1'},
                              'distribution': {'count': '1'},
                              'technology': {'count': '1'},
@@ -315,8 +323,8 @@ class GPL(SOFT):
         handle.close()
 
 class GSM(SOFT):
-    def __init__(self):
-        super(GSM, self).__init__()
+    def __init__(self, rowFilterPred = None):
+        super(GSM, self).__init__(rowFilterPred)
         self._GSMattributes = {'title': {'count': '1'},
                                'supplementary_file': {'count':'1|+'},
                                'table': {'count': '0|1'},
@@ -380,8 +388,8 @@ class GSM(SOFT):
         self.nonStdAttributes = [attr for attr in self.nonStdAttributes if attr not in stdChanAttrs]
 
 class GSE(SOFT):
-    def __init__(self):
-        super(GSE, self).__init__()
+    def __init__(self, rowFilterPred = None):
+        super(GSE, self).__init__(rowFilterPred)
         self._GSEattributes = {'title': {'count': '1'},
                               'summary': {'count': '1|+'},
                               'overall_design': {'count': '1'},
@@ -404,8 +412,8 @@ class GSE(SOFT):
         handle.close()
 
 class GDS(SOFT):
-    def __init__(self):
-        super(GDS, self).__init__()
+    def __init__(self, rowFilterPred = None):
+        super(GDS, self).__init__(rowFilterPred)
         # These attributes are taken from GDS files. 
         self._attributes = {'database': {'entityValue': {},
                                          'name': {},
