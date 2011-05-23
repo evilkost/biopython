@@ -1,4 +1,5 @@
 # Copyright 2011 Phillip Garland  <pgarland@gmail.com> All rights reserved.
+# Copyright 2011 Anthony Cornehl <accornehl@gmail.com> All rights reserved
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
@@ -9,17 +10,27 @@
 # Would be useful to have a function for fetching platforms/series/samples
 # referenced in a file's metadata.
 
+import gzip
 import string
 import re
 
+from mimetypes import guess_type
 from utils import _read_key_value, stringIsType, maybeConvertToNumber
 
 # The SOFT class should never be directly instantiated; it just contains
 # variables and methods common to some or all of it's subclasses (GSM, GSE, GPL,
 # and GDS)
 class SOFT(object):
-    def __init__(self, rowFilterPred = None):
+    def __init__(self, filename, rowFilterPred = None):
         self.rowFilterPred = rowFilterPred
+
+        self.filename = filename
+        type, encoding = guess_type (filename)
+        if encoding is 'gzip':
+            self.file = gzip.open (filename)
+        else:
+            self.file = open (filename)
+
         # These attributes are used to generate a dictionary to hold the values
         # of the attributes found a file. 'count' gives the possible number of
         # occurances of an attribute in a file. A literal number, e.g. '0' or
@@ -143,7 +154,7 @@ class SOFT(object):
         delimiter"""
 
         cmds = {'LINK_PRE': '', 'LINK_SUF': '', 'DELIMIT': None}
-    
+
         # Capture the description, as well as any remaining portion following the
         # description
         descriptionMatch = re.search('(.+?)((?:LINK_PRE|LINK_SUF|DELIMIT):\".+?\")*$', value)
@@ -203,7 +214,7 @@ class SOFT(object):
                     else:
                         self.meta[label] = value
                 except KeyError: # Catch non standard attributes
-                    self.nonStdAttributes.append(label)                    
+                    self.nonStdAttributes.append(label)
                     # Since these attributes aren't standardized by NCBI, we
                     # can't know if there are 1 or many, so we shove them in a list
 
@@ -286,12 +297,12 @@ class SOFT(object):
 
         if isinstance(value, list):
             return [maybeConvertToNumber(elt) for elt in value]
-        else:    
+        else:
             return maybeConvertToNumber(value)
 
 class GPL(SOFT):
-    def __init__(self, rowFilterPred = None):
-        super(GPL, self).__init__(rowFilterPred)
+    def __init__(self, filename, rowFilterPred = None):
+        super(GPL, self).__init__(filename, rowFilterPred)
         self._GPLattributes= {'title': {'count': '1'},
                              'distribution': {'count': '1'},
                              'technology': {'count': '1'},
@@ -310,21 +321,20 @@ class GPL(SOFT):
         self._attributes = dict(self._SOFTattributes, **self._GPLattributes)
         self._setMetaDefaultValues()
 
-    def read(self, fileName):
-        handle = open(fileName)
-        self.readEntities(handle)
-        self.readTableHeaderDescriptions(handle)
+    def read(self):
+        self.readEntities(self.file)
+        self.readTableHeaderDescriptions(self.file)
         # Between the table header descriptions and the data table itself,
         # there's a line that contains the column names. Since the information
         # in this column is redundant with table header descriptions, we skip
         # past it.
-        handle.next()
-        self.readTable(handle)
-        handle.close()
+        self.file.next()
+        self.readTable(self.file)
+        self.file.close()
 
 class GSM(SOFT):
-    def __init__(self, rowFilterPred = None):
-        super(GSM, self).__init__(rowFilterPred)
+    def __init__(self, filename, rowFilterPred = None):
+        super(GSM, self).__init__(filename, rowFilterPred = None)
         self._GSMattributes = {'title': {'count': '1'},
                                'supplementary_file': {'count':'1|+'},
                                'table': {'count': '0|1'},
@@ -356,18 +366,16 @@ class GSM(SOFT):
         self._attributes = dict(self._SOFTattributes, **self._GSMattributes)
         self._setMetaDefaultValues()
 
-    def read(self, fileName):
-        self.readEntities(fileName)
-        handle = open(fileName)
-        self.readEntities(handle)
-        self.readTableHeaderDescriptions(handle)
+    def read(self):
+        self.readEntities(self.file)
+        self.readTableHeaderDescriptions(self.file)
         # Between the table header descriptions and the data table itself,
         # there's a line that contains the column names. Since the information
         # in this column is redundant with table header descriptions, we skip
         # past it.
-        handle.next()        
-        self.readTable(handle)
-        handle.close()
+        self.file.next()
+        self.readTable(self.file)
+        self.file.close()
 
         # Group the attributes by channel by filling meta.['channels']
         channel_count = int(self.meta['channel_count'])
@@ -388,8 +396,8 @@ class GSM(SOFT):
         self.nonStdAttributes = [attr for attr in self.nonStdAttributes if attr not in stdChanAttrs]
 
 class GSE(SOFT):
-    def __init__(self, rowFilterPred = None):
-        super(GSE, self).__init__(rowFilterPred)
+    def __init__(self, filename, rowFilterPred = None):
+        super(GSE, self).__init__( filename, rowFilterPred)
         self._GSEattributes = {'title': {'count': '1'},
                               'summary': {'count': '1|+'},
                               'overall_design': {'count': '1'},
@@ -403,18 +411,17 @@ class GSE(SOFT):
         self._attributes = dict(self._SOFTattributes, **self._GSEattributes)
         self._setMetaDefaultValues()
 
-    def read(self, filename):
+    def read(self):
         """Read a GSE file"""
-        handle = open(filename)
-        self.readEntities(handle)
-        self.readTableHeaderDescriptions(handle)
+        self.readEntities(self.file)
+        self.readTableHeaderDescriptions(self.file)
         # GSE files do not contain a table, so we just read the metadata
-        handle.close()
+        self.file.close()
 
 class GDS(SOFT):
-    def __init__(self, rowFilterPred = None):
-        super(GDS, self).__init__(rowFilterPred)
-        # These attributes are taken from GDS files. 
+    def __init__(self, filename,  rowFilterPred = None):
+        super(GDS, self).__init__(filename, rowFilterPred)
+        # These attributes are taken from GDS files.
         self._attributes = {'database': {'entityValue': {},
                                          'name': {},
                                          'institute': {},
@@ -453,7 +460,7 @@ class GDS(SOFT):
                                         'description': {},
                                         'sample_id': {},
                                         'type': {}}}
-        
+
         # Initialize the attributes
         self.entities = {'database': {}, 'dataset': {}, 'subset': {}, 'annotation': {}}
         for attr in self._attributes['database'].keys():
@@ -476,7 +483,7 @@ class GDS(SOFT):
         while line:
             line = line.strip('\n').strip('\r')
             if not line: continue
-           
+
             if SOFT._isEntityIndicator(line):
                 entity, value = _read_key_value(line)
                 entity = string.lower(entity)
@@ -503,23 +510,22 @@ class GDS(SOFT):
                     except KeyError:
                         # Don't do any additonal processing on value
                         next
-                    self.entities[entity][label] = value        
+                    self.entities[entity][label] = value
                     line = handle.next()
                 if entity == 'subset':
                     self.subsets.append(self.entities['subset'])
 
-    def readMeta(self, fileName):
+    def readMeta(self):
         """Read in the entities and data table header descriptions from a GDS file"""
-        handle = open(fileName)
-        self.readEntities(handle)
-        self.readTableHeaderDescriptions(handle)
-        handle.close()
-                            
-    def read(self, fileName):
+        self.readEntities(self.file)
+        self.readTableHeaderDescriptions(self.file)
+        self.file.close()
+
+    def read(self):
         """Read in the metadata and data table from a GDS file"""
-        handle = open(fileName)
-        self.readEntities(handle)
-        self.readTableHeaderDescriptions(handle)
-        handle.next()
-        self.readTable(handle)
-        handle.close()
+        self.readEntities(self.file)
+        self.readTableHeaderDescriptions(self.file)
+        self.file.next()
+        self.readTable(self.file)
+        self.file.close()
+
