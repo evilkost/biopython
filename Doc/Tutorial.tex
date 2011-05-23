@@ -6092,10 +6092,23 @@ approprite SOFT file as an argument, includeing gzipped files:
 
 \begin{verbatim}
 >>> from Bio import Geo
->>> gse16 = GSE("GSE16.txt")
->>> gpl96 = GPL("GPL96.txt.gz")
->>> gsm14498 = GSM("GSM14498.txt")
->>> gds858 = GDS("GDS858_full.soft.gz")
+>>> gse16 = Geo.GSE("GSE16.txt")
+>>> gpl96 = Geo.GPL("GPL96.txt.gz")
+>>> gsm14498 = Geo.GSM("GSM14498.txt")
+>>> gds858 = Geo.GDS("GDS858_full.soft.gz")
+\end{verbatim}
+
+You can filter which data table entries are stored in the object by supplying a
+predicate function to the constuctor. Each row is passed to the function as a
+dictionary, indexed by column name. If the predicate returns true, the row is
+added to the object's table. If the predicate returns false, the row is
+discarded.
+
+\begin{verbatim}
+>>> def gdsPredfunc(row):
+...     return row['ID_REF'] in ['AFFX-TrpnX-M_at', '63825_at', '55616_at']
+
+>>> gds858 = Geo.GDS('/home/pgarland/Hacking/Mine/BioPython/GEOsoft/GDS858_full.soft',gdsPredfunc)
 \end{verbatim}
 
 Each class has a \verb|read()| method that takes a filename that reads
