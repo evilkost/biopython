@@ -10,7 +10,7 @@ import unittest
 from cStringIO import StringIO
 
 from Bio import Phylo
-from Bio.Phylo import PhyloXML
+from Bio.Phylo import PhyloXML, NewickIO
 
 #TODO - Remove this hack
 #This will raise MissingPythonDependencyError if we don't have ElementTree
@@ -32,17 +32,27 @@ EX_PHYLO = 'PhyloXML/phyloxml_examples.xml'
 class IOTests(unittest.TestCase):
     """Tests for parsing and writing the supported formats."""
 
-    def test_newick(self):
+    def test_newick_read_single(self):
         """Read a Newick file with one tree."""
         tree = Phylo.read(EX_NEWICK, 'newick')
         self.assertEqual(len(tree.get_terminals()), 28)
 
-    def test_newick(self):
+    def test_newick_read_multiple(self):
         """Parse a Nexus file with multiple trees."""
         trees = list(Phylo.parse(EX_NEXUS, 'nexus'))
         self.assertEqual(len(trees), 3)
         for tree in trees:
             self.assertEqual(len(tree.get_terminals()), 9)
+
+    def test_format_branch_length(self):
+        """Custom format string for Newick branch length serialization."""
+        tree = Phylo.read(StringIO('A:0.1;'), 'newick')
+        mem_file = StringIO()
+        Phylo.write(tree, mem_file, 'newick', format_branch_length='%.0e')
+        # Py2.5 compat: Windows with Py2.5- represents this as 1e-001;
+        # on all other platforms it's 1e-01
+        self.assertTrue(mem_file.getvalue().strip()
+                        in ['A:1e-01;', 'A:1e-001;'])
 
     def test_convert(self):
         """Convert a tree between all supported formats."""
