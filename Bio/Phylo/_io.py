@@ -7,28 +7,20 @@
 
 This API follows the same semantics as Biopython's `SeqIO` and `AlignIO`.
 """
+
+# For with on Python/Jython 2.5
+from __future__ import with_statement
 __docformat__ = "restructuredtext en"
 
-from Bio.Phylo import BaseTree, NewickIO, NexusIO
+from Bio import File
+from Bio.Phylo import BaseTree, NewickIO, NexusIO, PhyloXMLIO
 
-# Python 2.4 doesn't have ElementTree, which PhyloXMLIO needs
-try:
-    from Bio.Phylo import PhyloXMLIO
-except ImportError:
-    # TODO: should we issue a warning? the installer will have already whined
-    # raise MissingPythonDependencyError(
-    #         "Install an ElementTree implementation if you want to use "
-    #         "Bio.Phylo to parse phyloXML files.")
-    supported_formats = {
-            'newick':   NewickIO,
-            'nexus':    NexusIO,
-            }
-else:
-    supported_formats = {
-            'newick':   NewickIO,
-            'nexus':    NexusIO,
-            'phyloxml': PhyloXMLIO,
-            }
+
+supported_formats = {
+        'newick':   NewickIO,
+        'nexus':    NexusIO,
+        'phyloxml': PhyloXMLIO,
+        }
 
 
 def parse(file, format, **kwargs):
@@ -45,17 +37,9 @@ def parse(file, format, **kwargs):
     ...     print tree.rooted
     True
     """
-    do_close = False
-    if isinstance(file, basestring):
-        file = open(file, 'r')
-        do_close = True
-    # Py2.4 compatibility: this should be in a try/finally block
-    # try:
-    for tree in getattr(supported_formats[format], 'parse')(file, **kwargs):
-        yield tree
-    # finally:
-    if do_close:
-        file.close()
+    with File.as_handle(file, 'r') as fp:
+        for tree in getattr(supported_formats[format], 'parse')(fp, **kwargs):
+            yield tree
 
 
 def read(file, format, **kwargs):
@@ -83,15 +67,8 @@ def write(trees, file, format, **kwargs):
     if isinstance(trees, BaseTree.Tree):
         # Passed a single tree instead of an iterable -- that's OK
         trees = [trees]
-    do_close = False
-    if isinstance(file, basestring):
-        file = open(file, 'w+')
-        do_close = True
-    try:
-        n = getattr(supported_formats[format], 'write')(trees, file, **kwargs)
-    finally:
-        if do_close:
-            file.close()
+    with File.as_handle(file, 'w+') as fp:
+        n = getattr(supported_formats[format], 'write')(trees, fp, **kwargs)
     return n
 
 
