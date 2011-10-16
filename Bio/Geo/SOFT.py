@@ -13,9 +13,45 @@
 import gzip
 import string
 import re
+import urllib2
+import ftplib
 
 from mimetypes import guess_type
 from utils import _read_key_value, stringIsType, maybeConvertToNumber
+
+
+# FIXME: Probably should have way to set the location files are downloaded to.
+def getGEO(accession):
+    """Download the file named by accession from NCBI"""
+    
+    acc_type = accession[:3]
+    if acc_type in ['GSM', 'GPL', 'GSE']:
+        # GSM, GPL, and GSE can be accessed through the NCBI web site.
+        geo_http_url_base = 'http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?targ=self&acc='
+        geo_http_url_tail='&form=text&view=full'
+        geo_url = geo_http_url_base + accession + geo_http_url_tail
+        
+        url_handle = urllib2.urlopen(geo_url)
+        geo_data = url_handle.read()
+        
+        lfd = open(accession + '.soft', 'wb')
+        lfd.write(geo_data)
+        lfd.close
+        
+    elif acc_type == 'GDS':
+        # GDS can be accessed from NCBI's FTP site
+        geo_ftp_url_base = 'ftp://ftp.ncbi.nih.gov'
+        gds_dir = '/pub/geo/DATA/SOFT/GDS_full/'
+        file_name = accession + '_full.soft.gz'
+        
+        ftp = ftplib.FTP(geo_ftp_url_base)        
+        ftp.login()
+        ftp.cwd(gds_dir)
+        
+        lfd = open(file_name, 'wb')
+        ftp.retrbinary('RETR ' + lf, lambda(data): lfd.write(data))
+        lfd.close()
+
 
 # The SOFT class should never be directly instantiated; it just contains
 # variables and methods common to some or all of it's subclasses (GSM, GSE, GPL,

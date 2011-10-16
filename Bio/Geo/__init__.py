@@ -11,7 +11,7 @@ http://www.ncbi.nlm.nih.gov/geo/
 """
 
 import Record
-from SOFT import GDS, GPL, GSE, GSM
+from SOFT import GDS, GPL, GSE, GSM, getGEO
 from utils import _read_key_value
 
 def parse(handle):
