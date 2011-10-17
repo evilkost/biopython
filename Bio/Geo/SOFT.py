@@ -10,11 +10,13 @@
 # Would be useful to have a function for fetching platforms/series/samples
 # referenced in a file's metadata.
 
+import sys
 import gzip
 import string
 import re
 import urllib2
 import ftplib
+
 
 from mimetypes import guess_type
 from utils import _read_key_value, stringIsType, maybeConvertToNumber
@@ -34,13 +36,14 @@ def getGEO(accession):
         url_handle = urllib2.urlopen(geo_url)
         geo_data = url_handle.read()
         
-        lfd = open(accession + '.soft', 'wb')
+        file_name = accession + '.soft' 
+        lfd = open(file_name, 'wb')
         lfd.write(geo_data)
-        lfd.close
+        lfd.close     
         
     elif acc_type == 'GDS':
         # GDS can be accessed from NCBI's FTP site
-        geo_ftp_url_base = 'ftp://ftp.ncbi.nih.gov'
+        geo_ftp_url_base = 'ftp.ncbi.nih.gov'
         gds_dir = '/pub/geo/DATA/SOFT/GDS_full/'
         file_name = accession + '_full.soft.gz'
         
@@ -49,8 +52,13 @@ def getGEO(accession):
         ftp.cwd(gds_dir)
         
         lfd = open(file_name, 'wb')
-        ftp.retrbinary('RETR ' + lf, lambda(data): lfd.write(data))
+        ftp.retrbinary('RETR ' + file_name, lambda(data): lfd.write(data))
         lfd.close()
+
+    soft = getattr(sys.modules['Bio.Geo'], acc_type)(file_name)
+    soft.read()
+
+    return soft
 
 
 # The SOFT class should never be directly instantiated; it just contains
